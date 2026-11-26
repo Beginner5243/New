@@ -74,38 +74,71 @@ jobs:
           python-version: "3.11"
 
       - name: Validate duration and inputs
-        run: |
-          python - <<'PY'
-          import os
-          d = int(os.environ["DURATION"])
-          s = int(os.environ["SCENE"])
-          if not 30 <= d <= 1800:
-              raise SystemExit("Duration must be 30-1800 seconds.")
-          if not 3 <= s <= 8:
-              raise SystemExit("Scene duration must be 3-8 seconds.")
-          print("Input validation passed.")
-          PY
         env:
           DURATION: ${{ inputs.duration_seconds }}
           SCENE: ${{ inputs.scene_seconds }}
+        run: |
+          python - <<'PY'
+          import os
 
-      - name: Create story and scene plan
+          d = int(os.environ["DURATION"])
+          s = int(os.environ["SCENE"])
+
+          if not 30 <= d <= 1800:
+              raise SystemExit("Duration must be 30-1800 seconds.")
+
+          if not 3 <= s <= 8:
+              raise SystemExit("Scene duration must be 3-8 seconds.")
+
+          print("Input validation passed.")
+          PY
+
+      - name: Create scene plan
+        env:
+          DURATION: ${{ inputs.duration_seconds }}
+          SCENE_SECONDS: ${{ inputs.scene_seconds }}
+          ASPECT: ${{ inputs.aspect }}
+          LANGUAGE: ${{ inputs.language }}
+          MODE: ${{ inputs.mode }}
+          CHARACTERS: ${{ inputs.characters }}
+          TOPIC: ${{ inputs.topic }}
+          STYLE: ${{ inputs.style }}
+          OUTPUT_DIR: output/${{ github.run_id }}
         run: |
           python scripts/plan_video.py \
-            --duration "${{ inputs.duration_seconds }}" \
-            --scene-seconds "${{ inputs.scene_seconds }}" \
-            --aspect "${{ inputs.aspect }}" \
-            --language "${{ inputs.language }}" \
-            --mode "${{ inputs.mode }}" \
-            --characters "${{ inputs.characters }}" \
-            --topic "${{ inputs.topic }}" \
-            --style "${{ inputs.style }}" \
-            --output output/${{ github.run_id }}
+            --duration "$DURATION" \
+            --scene-seconds "$SCENE_SECONDS" \
+            --aspect "$ASPECT" \
+            --language "$LANGUAGE" \
+            --mode "$MODE" \
+            --characters "$CHARACTERS" \
+            --topic "$TOPIC" \
+            --style "$STYLE" \
+            --output "$OUTPUT_DIR"
 
-      - name: Upload planner outputs
+      - name: Generate story, dialogue and narration
+        env:
+          TOPIC: ${{ inputs.topic }}
+          CHARACTERS: ${{ inputs.characters }}
+          DURATION: ${{ inputs.duration_seconds }}
+          SCENE_SECONDS: ${{ inputs.scene_seconds }}
+          LANGUAGE: ${{ inputs.language }}
+          STYLE: ${{ inputs.style }}
+          OUTPUT_DIR: output/${{ github.run_id }}/story
+        run: |
+          python scripts/story_engine.py \
+            --topic "$TOPIC" \
+            --characters "$CHARACTERS" \
+            --duration "$DURATION" \
+            --scene-seconds "$SCENE_SECONDS" \
+            --language "$LANGUAGE" \
+            --style "$STYLE" \
+            --output "$OUTPUT_DIR"
+
+      - name: Upload CuteVerse project
         uses: actions/upload-artifact@v4
         with:
-          name: cuteverse-plan-${{ github.run_id }}
+          name: cuteverse-project-${{ github.run_id }}
           path: output/${{ github.run_id }}/
           retention-days: 7
           
