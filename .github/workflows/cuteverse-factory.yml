@@ -1,0 +1,111 @@
+
+name: CuteVerse Multi-Length Factory
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration_seconds:
+        description: "Video length: 30 to 1800 seconds"
+        required: true
+        default: "45"
+        type: string
+      scene_seconds:
+        description: "Target duration per scene (3-8 sec)"
+        required: true
+        default: "5"
+        type: string
+      aspect:
+        description: "Output aspect ratio"
+        required: true
+        default: "vertical"
+        type: choice
+        options:
+          - vertical
+          - horizontal
+          - square
+      language:
+        description: "Narration language"
+        required: true
+        default: "English"
+        type: choice
+        options:
+          - English
+          - Hindi
+      mode:
+        description: "Production mode"
+        required: true
+        default: "hybrid"
+        type: choice
+        options:
+          - full_motion
+          - hybrid
+          - story_mode
+      characters:
+        description: "Characters, comma separated"
+        required: true
+        default: "Yeti"
+        type: string
+      topic:
+        description: "Story topic"
+        required: true
+        default: "A funny friendship adventure"
+        type: string
+      style:
+        description: "Visual style"
+        required: true
+        default: "Cute high-quality 3D cartoon"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate duration and inputs
+        run: |
+          python - <<'PY'
+          import os
+          d = int(os.environ["DURATION"])
+          s = int(os.environ["SCENE"])
+          if not 30 <= d <= 1800:
+              raise SystemExit("Duration must be 30-1800 seconds.")
+          if not 3 <= s <= 8:
+              raise SystemExit("Scene duration must be 3-8 seconds.")
+          print("Input validation passed.")
+          PY
+        env:
+          DURATION: ${{ inputs.duration_seconds }}
+          SCENE: ${{ inputs.scene_seconds }}
+
+      - name: Create story and scene plan
+        run: |
+          python scripts/plan_video.py \
+            --duration "${{ inputs.duration_seconds }}" \
+            --scene-seconds "${{ inputs.scene_seconds }}" \
+            --aspect "${{ inputs.aspect }}" \
+            --language "${{ inputs.language }}" \
+            --mode "${{ inputs.mode }}" \
+            --characters "${{ inputs.characters }}" \
+            --topic "${{ inputs.topic }}" \
+            --style "${{ inputs.style }}" \
+            --output output/${{ github.run_id }}
+
+      - name: Upload planner outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuteverse-plan-${{ github.run_id }}
+          path: output/${{ github.run_id }}/
+          retention-days: 7
+          
