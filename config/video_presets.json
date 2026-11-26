@@ -1,0 +1,27 @@
+{
+  "minimum_duration_seconds": 30,
+  "maximum_duration_seconds": 1800,
+  "default_scene_seconds": 5,
+  "scene_seconds_options": [3, 4, 5, 6, 8],
+  "aspect_ratios": {
+    "vertical": "9:16",
+    "horizontal": "16:9",
+    "square": "1:1"
+  },
+  "production_modes": [
+    "full_motion",
+    "hybrid",
+    "story_mode"
+  ],
+  "languages": [
+    "English",
+    "Hindi"
+  ],
+  "default_resolution": {
+    "vertical": [720, 1280],
+    "horizontal": [1280, 720],
+    "square": [720, 720]
+  },
+  "free_first": true,
+  "paid_compute_requires_approval": true
+}
