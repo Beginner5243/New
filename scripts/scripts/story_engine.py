@@ -4,120 +4,177 @@ import argparse
 import json
 import math
 from pathlib import Path
+from datetime import datetime, timezone
 
+BEATS = [
+    ("opening", "Introduce the characters and their world."),
+    ("discovery", "Discover something mysterious or surprising."),
+    ("curiosity", "Investigate and react with curiosity."),
+    ("problem", "A funny or exciting problem appears."),
+    ("attempt", "Try the first creative solution."),
+    ("complication", "The first attempt creates a new complication."),
+    ("teamwork", "Friends cooperate and help each other."),
+    ("climax", "Face the biggest challenge of the adventure."),
+    ("resolution", "Solve the problem in a satisfying way."),
+    ("ending", "Finish with a memorable funny or heartwarming moment."),
+]
 
-def build_story(topic, characters, duration, scene_seconds, language, style):
-    total_scenes = math.ceil(duration / scene_seconds)
-    characters = [c.strip() for c in characters.split(",") if c.strip()]
-    if not characters:
-        characters = ["Main Character"]
+ACTIONS = [
+    "explores the colorful environment",
+    "discovers a mysterious object",
+    "reacts with surprise and curiosity",
+    "tries to understand the new discovery",
+    "attempts a funny solution",
+    "accidentally creates a new problem",
+    "asks a friend for help",
+    "works together to solve the challenge",
+    "overcomes the main obstacle",
+    "celebrates with a funny ending",
+]
 
-    stages = [
-        ("HOOK", "Introduce a surprising event that grabs attention."),
-        ("INTRO", "Introduce the characters and the setting."),
-        ("DISCOVERY", "Characters discover something unexpected."),
-        ("PROBLEM", "A funny, exciting or emotional problem appears."),
-        ("ATTEMPT", "Characters try to solve the problem together."),
-        ("TWIST", "Add a surprising but child-friendly twist."),
-        ("CLIMAX", "Show the biggest action or emotional moment."),
-        ("RESOLUTION", "Solve the problem with teamwork."),
-        ("ENDING", "End with a memorable visual and a sequel possibility."),
-    ]
+EN = [
+    "Welcome to a brand-new adventure!",
+    "Look what we just discovered!",
+    "What could this mysterious thing be?",
+    "Uh-oh! We have a little problem!",
+    "Let's try something clever!",
+    "Oops! That didn't go as planned!",
+    "Don't worry. Friends can help!",
+    "Together, we can do this!",
+    "We did it! The adventure is saved!",
+    "And that was the funniest adventure ever!",
+]
 
-    scenes = []
-    for i in range(total_scenes):
-        stage, direction = stages[i % len(stages)]
-        character = characters[i % len(characters)]
-        next_character = characters[(i + 1) % len(characters)]
-
-        scene = {
-            "scene": i + 1,
-            "stage": stage,
-            "duration_seconds": min(
-                scene_seconds, duration - (i * scene_seconds)
-            ),
-            "characters": characters,
-            "action": direction,
-            "story_context": topic,
-            "visual_prompt": (
-                f"{style}. Story: {topic}. "
-                f"Scene {i+1}: {direction} "
-                f"Featuring {', '.join(characters)}. "
-                "Keep character designs consistent, expressive faces, "
-                "cinematic composition, smooth animation, "
-                "family-friendly content, no text, no watermark."
-            ),
-            "dialogue": (
-                f"{character}: What is happening? "
-                f"{next_character}: Let's figure it out together!"
-            ),
-            "narration": (
-                f"Scene {i+1}. {direction} "
-                f"The characters continue their adventure."
-            ),
-        }
-        scenes.append(scene)
-
-    return {
-        "title": topic,
-        "language": language,
-        "style": style,
-        "duration_seconds": duration,
-        "scene_count": total_scenes,
-        "characters": characters,
-        "scenes": scenes,
-    }
-
+HI = [
+    "एक नया रोमांच शुरू होता है!",
+    "अरे! यह क्या मिला?",
+    "यह रहस्यमयी चीज़ क्या हो सकती है?",
+    "ओह! एक छोटी सी मुसीबत आ गई!",
+    "चलो, कोई मज़ेदार उपाय सोचते हैं!",
+    "अरे! यह तो उल्टा हो गया!",
+    "चिंता मत करो, दोस्त मदद करेंगे!",
+    "हम मिलकर यह कर सकते हैं!",
+    "वाह! हमने समस्या हल कर दी!",
+    "और यह सबसे मज़ेदार रोमांच था!",
+]
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--topic", required=True)
-    parser.add_argument("--characters", default="Yeti")
-    parser.add_argument("--duration", type=int, default=30)
-    parser.add_argument("--scene-seconds", type=int, default=5)
-    parser.add_argument("--language", default="English")
-    parser.add_argument("--style", default="Cute 3D animation")
-    parser.add_argument("--output", default="output/story")
-    args = parser.parse_args()
+    p = argparse.ArgumentParser()
+    p.add_argument("--topic", required=True)
+    p.add_argument("--characters", required=True)
+    p.add_argument("--duration", type=int, required=True)
+    p.add_argument("--scene-seconds", type=int, default=5)
+    p.add_argument("--language", choices=["English", "Hindi"], default="English")
+    p.add_argument("--style", default="Cute high-quality 3D cartoon")
+    p.add_argument("--output", default="output/story")
+    args = p.parse_args()
 
     if not 30 <= args.duration <= 1800:
-        raise ValueError("Duration must be between 30 and 1800 seconds.")
+        raise SystemExit("Duration must be 30 to 1800 seconds.")
     if not 3 <= args.scene_seconds <= 8:
-        raise ValueError("Scene duration must be 3-8 seconds.")
+        raise SystemExit("Scene duration must be 3 to 8 seconds.")
 
-    result = build_story(
-        args.topic,
-        args.characters,
-        args.duration,
-        args.scene_seconds,
-        args.language,
-        args.style,
-    )
+    characters = [
+        c.strip() for c in args.characters.split(",") if c.strip()
+    ] or ["Cute original hero"]
 
+    total = math.ceil(args.duration / args.scene_seconds)
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=True)
 
-    with open(out / "story.json", "w", encoding="utf-8") as f:
-        json.dump(result, f, ensure_ascii=False, indent=2)
+    narration_lines = EN if args.language == "English" else HI
+    scenes = []
 
-    with open(out / "narration.txt", "w", encoding="utf-8") as f:
-        for scene in result["scenes"]:
-            f.write(scene["narration"] + "\n")
+    for i in range(total):
+        start = i * args.scene_seconds
+        end = min(args.duration, start + args.scene_seconds)
+        beat_index = min(9, int(i / max(1, total) * 10))
+        beat, beat_description = BEATS[beat_index]
+        action = ACTIONS[i % len(ACTIONS)]
+        character = characters[i % len(characters)]
+        narration = narration_lines[i % len(narration_lines)]
 
-    with open(out / "dialogue.txt", "w", encoding="utf-8") as f:
-        for scene in result["scenes"]:
-            f.write(scene["dialogue"] + "\n")
+        prompt = (
+            f"{args.style}, cinematic animated scene. "
+            f"Characters: {', '.join(characters)}. "
+            f"Story: {args.topic}. "
+            f"Scene {i+1} of {total}. Story beat: {beat}. "
+            f"{beat_description} "
+            f"Action: {character} {action}. "
+            "Maintain identical character design, face, colors, "
+            "proportions and outfit across every scene. "
+            "Expressive emotions, smooth movement, detailed environment, "
+            "beautiful lighting, coherent animation, no text, no watermark."
+        )
 
-    with open(out / "scene_prompts.txt", "w", encoding="utf-8") as f:
-        for scene in result["scenes"]:
-            f.write(
-                f"\nSCENE {scene['scene']}\n"
-                f"{scene['visual_prompt']}\n"
+        scenes.append({
+            "scene": i + 1,
+            "start_seconds": start,
+            "end_seconds": end,
+            "duration_seconds": end - start,
+            "story_beat": beat,
+            "characters": characters,
+            "action": action,
+            "visual_prompt": prompt,
+            "narration": narration,
+            "dialogue": [
+                {
+                    "character": character,
+                    "line": narration
+                }
+            ]
+        })
+
+    project = {
+        "project": "CuteVerse",
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "topic": args.topic,
+        "characters": characters,
+        "duration_seconds": args.duration,
+        "scene_count": total,
+        "scene_seconds": args.scene_seconds,
+        "language": args.language,
+        "style": args.style,
+        "scenes": scenes
+    }
+
+    (out / "story.json").write_text(
+        json.dumps(project, indent=2, ensure_ascii=False),
+        encoding="utf-8"
+    )
+
+    (out / "narration.txt").write_text(
+        "\n".join(s["narration"] for s in scenes),
+        encoding="utf-8"
+    )
+
+    (out / "dialogue.txt").write_text(
+        "\n".join(
+            f"Scene {s['scene']}: "
+            + " | ".join(
+                f"{d['character']}: {d['line']}"
+                for d in s["dialogue"]
             )
+            for s in scenes
+        ),
+        encoding="utf-8"
+    )
 
-    print(f"Story created: {result['scene_count']} scenes")
-    print(f"Output: {out}")
+    (out / "video_prompts.txt").write_text(
+        "\n\n".join(
+            f"SCENE {s['scene']} "
+            f"({s['start_seconds']}–{s['end_seconds']} sec)\n"
+            f"{s['visual_prompt']}\n"
+            f"NARRATION: {s['narration']}"
+            for s in scenes
+        ),
+        encoding="utf-8"
+    )
 
+    print(f"Story created: {total} scenes")
+    print(f"Duration: {args.duration} seconds")
+    print(f"Files saved in: {out}")
 
 if __name__ == "__main__":
     main()
+    
