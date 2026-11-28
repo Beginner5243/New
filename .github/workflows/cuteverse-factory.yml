@@ -134,7 +134,33 @@ jobs:
             --language "$LANGUAGE" \
             --style "$STYLE" \
             --output "$OUTPUT_DIR"
+            
+      - name: Install video rendering tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip
+          python -m pip install Pillow
 
+      - name: Build preview MP4
+        run: |
+          RUN_DIR="output/${{ github.run_id }}"
+          STORY_FILE="$(find "$RUN_DIR" -type f -name 'story.json' -print -quit)"
+
+          if [ -z "$STORY_FILE" ]; then
+            echo "ERROR: story.json not found in $RUN_DIR"
+            find "$RUN_DIR" -maxdepth 4 -type f
+            exit 1
+          fi
+
+          echo "Story file found: $STORY_FILE"
+
+          python scripts/video_builder.py \
+            --story "$STORY_FILE" \
+            --output "$RUN_DIR/preview.mp4"
+
+          ls -lh "$RUN_DIR/preview.mp4"
+          
       - name: Upload CuteVerse project
         uses: actions/upload-artifact@v4
         with:
